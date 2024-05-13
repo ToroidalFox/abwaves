@@ -1,4 +1,7 @@
-use derive_more::Div;
+mod math;
+
+use std::f32::consts as f32c;
+
 use image::RgbImage;
 use noise::{utils::*, Seedable};
 use noise::{Fbm, Perlin};
@@ -6,75 +9,66 @@ use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256PlusPlus;
 use rayon::prelude::*;
 
-fn main() {
-    primitive_image_test();
+fn main() {}
+
+struct AbstractLine<T> {
+    pub level: math::Level,
+    height_fn: T,
 }
 
-#[derive(Clone, Copy, Debug, Div)]
-struct Vec2 {
-    pub x: f32,
-    pub y: f32,
-}
-
-impl Vec2 {
-    pub fn length(self) -> f32 {
-        f32::sqrt(self.dot(self))
+impl<T> AbstractLine<T>
+where
+    T: math::HeightFn,
+{
+    pub fn height(&self, from: impl Into<math::Vec2>) -> f32 {
+        let from = from.into();
+        self.level.distance_from_point(from)
+            + self
+                .height_fn
+                .height(self.level.distance_to_projection(from))
     }
-
-    pub fn dot(self, rhs: Self) -> f32 {
-        (self.x * rhs.x) + (self.y * rhs.y)
-    }
-}
-
-// impl std::ops::Div<f32> for Vec2 {
-//     type Output = Vec2;
-
-//     fn div(self, rhs: f32) -> Self::Output {
-//         Self {
-//             x: self.x / rhs,
-//             y: self.y / rhs,
-//         }
-//     }
-// }
-
-struct Dir2(Vec2);
-impl Dir2 {
-    pub fn new(from: Vec2) -> Result<Self, InvalidDirError> {
-        let length = from.length();
-
-        let is_finite = length.is_finite();
-        let is_zero = length > 0.0;
-        let is_nan = length.is_nan();
-
-        match (is_zero, is_finite, is_nan) {
-            (false, true, _) => Ok(from / length),
-            (true, _, _) => Err(InvalidDirError::Zero),
-            (_, _, true) => Err(InvalidDirError::NaN),
-            (_, false, _) => Err(InvalidDirError::Infinite),
-        }
-        .map(Self)
+    pub fn is_above(&self, point: impl Into<math::Vec2>) -> bool {
+        self.height(point) > 0.0
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-enum InvalidDirError {
-    Zero,
-    Infinite,
-    NaN,
+struct SineWave {
+    pub amplitude: f32,
+    pub wavelength: f32,
+    phase: f32,
 }
-impl InvalidDirError {
-    pub fn from_length(length: f32) -> Self {
-        if length.is_infinite() {
-            Self::Infinite
-        } else if length.is_nan() {
-            Self::NaN
-        } else {
-            Self::Zero
+impl SineWave {
+    pub fn new(amplitude: f32, wavelength: f32, phase: f32) -> Self {
+        Self {
+            amplitude,
+            wavelength,
+            phase: phase.rem_euclid(f32c::TAU),
         }
     }
+
+    fn phase(&self) -> f32 {
+        self.phase
+    }
 }
 
-fn primitive_image_test() {
+impl math::HeightFn for SineWave {
+    fn height(&self, at: f32) -> f32 {
+        let t = (at / self.wavelength * f32c::TAU).rem_euclid(f32c::TAU) + self.phase();
+        self.amplitude * f32::sin(t)
+    }
+}
+impl<T> math::HeightFn for &[T]
+where
+    T: math::HeightFn,
+{
+    fn height(&self, at: f32) -> f32 {
+        self.iter().map(|h| h.height(at)).sum()
+    }
+}
+
+fn _angled_primitive_pattern_test() {}
+
+fn _primitive_image_test() {
     let amplitude = 300.0; // pixels
     let wavelength = 600.0; // pixels
     let phase = 0.0 * std::f32::consts::TAU;
@@ -98,11 +92,10 @@ fn primitive_image_test() {
         });
 
     let mut new_image = std::fs::File::create("primitive_pattern_test.png").unwrap();
-    let result = img_buffer.write_to(&mut new_image, image::ImageFormat::Png);
-    dbg!(result);
+    let _ = img_buffer.write_to(&mut new_image, image::ImageFormat::Png);
 }
 
-fn test_rng() {
+fn _test_rng() {
     let seeds = vec![69420, 0, 42, 69, 420];
 
     for seed in seeds {
