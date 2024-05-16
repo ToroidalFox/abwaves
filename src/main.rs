@@ -9,11 +9,40 @@ use rand::{Rng, SeedableRng};
 use rand_xoshiro::Xoshiro256PlusPlus;
 use rayon::prelude::*;
 
-fn main() {}
+fn main() {
+    _angled_primitive_pattern_test();
+}
+
+fn _angled_primitive_pattern_test() {
+    let line = AbstractLine {
+        level: math::Level {
+            origin: math::Vec2::new(500.0, 500.0),
+            // up: math::Dir2::new((-1.0, 2.0)).unwrap_or(math::Dir2::UP),
+            up: math::Dir2::new((-1.0, -2.0)).unwrap(),
+        },
+        height_fn: SineWave::new(50.0, 300.0, 0.0),
+    };
+    let (width, height) = (1920, 1080);
+
+    let mut img_buffer = RgbImage::new(width, height);
+
+    img_buffer
+        .par_enumerate_pixels_mut()
+        .for_each(|(x, y, pixel)| {
+            if line.is_above((x as f32, y as f32)) {
+                pixel.0 = [192, 192, 192];
+            } else {
+                pixel.0 = [63, 63, 63];
+            }
+        });
+
+    let mut new_image = std::fs::File::create("angled_primitive_pattern_test.png").unwrap();
+    let _ = img_buffer.write_to(&mut new_image, image::ImageFormat::Png);
+}
 
 struct AbstractLine<T> {
     pub level: math::Level,
-    height_fn: T,
+    pub height_fn: T,
 }
 
 impl<T> AbstractLine<T>
@@ -65,8 +94,6 @@ where
         self.iter().map(|h| h.height(at)).sum()
     }
 }
-
-fn _angled_primitive_pattern_test() {}
 
 fn _primitive_image_test() {
     let amplitude = 300.0; // pixels

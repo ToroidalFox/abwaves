@@ -66,11 +66,13 @@ impl From<Dir2> for Vec2 {
 #[derive(Deref)]
 pub struct Dir2(Vec2);
 impl Dir2 {
-    pub fn new(from: Vec2) -> Result<Self, InvalidDirError> {
+    pub const UP: Dir2 = Dir2(Vec2 { x: 0.0, y: 1.0 });
+    pub fn new(from: impl Into<Vec2>) -> Result<Self, InvalidDirError> {
+        let from = from.into();
         let length = from.length();
 
         let is_finite = length.is_finite();
-        let is_zero = length > 0.0;
+        let is_zero = length <= 0.0;
         let is_nan = length.is_nan();
 
         match (is_zero, is_finite, is_nan) {
