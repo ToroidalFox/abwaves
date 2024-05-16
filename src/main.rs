@@ -10,7 +10,40 @@ use rand_xoshiro::Xoshiro256PlusPlus;
 use rayon::prelude::*;
 
 fn main() {
-    _angled_primitive_pattern_test();
+    _angled_fourier_series_test();
+}
+
+fn _angled_fourier_series_test() {
+    let line = AbstractLine {
+        level: math::Level {
+            origin: math::Vec2::new(500.0, 500.0),
+            // up: math::Dir2::new((-1.0, 2.0)).unwrap_or(math::Dir2::UP),
+            up: math::Dir2::new((1.0, -2.0)).unwrap(),
+        },
+        height_fn: vec![
+            SineWave::new(32.0, 512.0, 0.0),
+            SineWave::new(16.0, 256.0, 0.0),
+            SineWave::new(8.0, 128.0, 0.0),
+            SineWave::new(4.0, 64.0, 0.0),
+            SineWave::new(2.0, 32.0, 0.0),
+        ],
+    };
+    let (width, height) = (1920, 1080);
+
+    let mut img_buffer = RgbImage::new(width, height);
+
+    img_buffer
+        .par_enumerate_pixels_mut()
+        .for_each(|(x, y, pixel)| {
+            if line.is_above((x as f32, y as f32)) {
+                pixel.0 = [192, 192, 192];
+            } else {
+                pixel.0 = [63, 63, 63];
+            }
+        });
+
+    let mut new_image = std::fs::File::create("angled_fourier_series_test.png").unwrap();
+    let _ = img_buffer.write_to(&mut new_image, image::ImageFormat::Png);
 }
 
 fn _angled_primitive_pattern_test() {
@@ -40,15 +73,12 @@ fn _angled_primitive_pattern_test() {
     let _ = img_buffer.write_to(&mut new_image, image::ImageFormat::Png);
 }
 
-struct AbstractLine<T> {
+struct AbstractLine<T: math::HeightFn> {
     pub level: math::Level,
     pub height_fn: T,
 }
 
-impl<T> AbstractLine<T>
-where
-    T: math::HeightFn,
-{
+impl<T: math::HeightFn> AbstractLine<T> {
     pub fn height(&self, from: impl Into<math::Vec2>) -> f32 {
         let from = from.into();
         self.level.distance_from_point(from)
@@ -86,12 +116,9 @@ impl math::HeightFn for SineWave {
         self.amplitude * f32::sin(t)
     }
 }
-impl<T> math::HeightFn for &[T]
-where
-    T: math::HeightFn,
-{
+impl<T: math::HeightFn, S: std::ops::Deref<Target = [T]>> math::HeightFn for S {
     fn height(&self, at: f32) -> f32 {
-        self.iter().map(|h| h.height(at)).sum()
+        self.as_ref().iter().map(|h| h.height(at)).sum()
     }
 }
 
