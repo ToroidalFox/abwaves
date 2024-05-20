@@ -1,32 +1,5 @@
 use derive_more::{Add, Deref, Div, From, Mul, Sub};
 
-pub trait HeightFn {
-    fn height(&self, at: f32) -> f32;
-}
-
-pub struct Level {
-    pub origin: Vec2,
-    pub up: Dir2,
-}
-
-impl Level {
-    pub fn new(origin: Vec2, up: Dir2) -> Self {
-        Self { origin, up }
-    }
-    pub fn cross(&self) -> Dir2 {
-        Dir2::new_unchecked((self.up.y, -self.up.x))
-    }
-    pub fn distance_from_point(&self, point: impl Into<Vec2>) -> f32 {
-        (point.into() - self.origin).dot(*self.up)
-    }
-    pub fn distance_to_projection(&self, of: impl Into<Vec2>) -> f32 {
-        (of.into() - self.origin).dot(self.cross())
-    }
-    pub fn project_point(&self, point: impl Into<Vec2>) -> Vec2 {
-        self.origin + self.cross() * self.distance_to_projection(point)
-    }
-}
-
 #[derive(Clone, Copy, Debug, From, Add, Sub, Mul, Div)]
 pub struct Vec2 {
     pub x: f32,
@@ -63,11 +36,19 @@ impl From<Dir2> for Vec2 {
     }
 }
 
-#[derive(Deref)]
+#[derive(Clone, Copy, Deref)]
 pub struct Dir2(Vec2);
 impl Dir2 {
     pub const UP: Dir2 = Dir2(Vec2 { x: 0.0, y: 1.0 });
-    pub fn new(from: impl Into<Vec2>) -> Result<Self, InvalidDirError> {
+    pub fn new(x: f32, y: f32) -> Result<Self, InvalidDirError> {
+        Self::from_vec2((x, y))
+    }
+    pub fn new_unchecked(from: impl Into<Vec2>) -> Dir2 {
+        let from = from.into();
+        debug_assert!(from.is_normalized());
+        Self(from)
+    }
+    pub fn from_vec2(from: impl Into<Vec2>) -> Result<Self, InvalidDirError> {
         let from = from.into();
         let length = from.length();
 
@@ -82,11 +63,6 @@ impl Dir2 {
             (_, false, _) => Err(InvalidDirError::Infinite),
         }
         .map(Self)
-    }
-    pub fn new_unchecked(from: impl Into<Vec2>) -> Dir2 {
-        let from = from.into();
-        debug_assert!(from.is_normalized());
-        Self(from)
     }
 }
 
