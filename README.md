@@ -1,6 +1,6 @@
-# ablines
+# abwaves
 
-Generate images with **ab**stract **lines**.
+Generate images with **ab**stract **waves**.
 
 ## Usage
 

@@ -26,6 +26,16 @@ impl Vec2 {
     pub fn is_normalized(self) -> bool {
         f32::abs(self.length_squared() - 1.0) <= 1e-4
     }
+
+    pub fn rotate_90(self) -> Self {
+        Vec2::new(-self.y, self.x)
+    }
+    pub fn rotate_180(self) -> Self {
+        Vec2::new(-self.y, -self.x)
+    }
+    pub fn rotate_270(self) -> Self {
+        Vec2::new(self.y, -self.x)
+    }
 }
 impl From<Dir2> for Vec2 {
     fn from(value: Dir2) -> Self {
@@ -63,6 +73,16 @@ impl Dir2 {
             (_, false, _) => Err(InvalidDirError::Infinite),
         }
         .map(Self)
+    }
+
+    pub fn rotate_90(self) -> Self {
+        Self::new_unchecked(self.0.rotate_90())
+    }
+    pub fn rotate_180(self) -> Self {
+        Self::new_unchecked(self.0.rotate_180())
+    }
+    pub fn rotate_270(self) -> Self {
+        Self::new_unchecked(self.0.rotate_270())
     }
 }
 
