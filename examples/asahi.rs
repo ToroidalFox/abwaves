@@ -1,63 +1,86 @@
-use abwaves::prelude::*;
-
-use std::f32::consts as f32c;
+use abwaves::{linear_color_interp, prelude::*};
 
 use image::{Rgba, RgbaImage};
+use rand::{Rng, SeedableRng};
+use rand_distr::Distribution;
 use rayon::prelude::*;
 
 fn main() {
-    // let seed = rand_xoshiro::Xoshiro256PlusPlus;
+    let mut rng = rand_xoshiro::Xoshiro256PlusPlus::seed_from_u64(45411); // seed: 454h1 l1nux
+    let gaussian_dist = rand_distr::Normal::new(0.1, 0.02).unwrap();
+
+    let color_start = Rgba([0x23, 0x23, 0x3d, 255]);
+    // let color_end = Rgba([0x50, 0x65, 0x80, 255]);
+    let color_end = Rgba([0x60, 0x70, 0x80, 255]);
+
+    let div = 6;
+    let amp = 1.0 / div as f32 / 6.0;
+    let wavelength = 1.0 / 2.6;
+
     let abwaves = AbWaves::new(
         vec![
-            // Rgba([68, 76, 76, 255]),    // "mountain"
-            // Rgba([217, 116, 62, 255]),  // "sunset red"
-            // Rgba([226, 205, 150, 255]), // "sunset yello"
-            // Rgba([107, 114, 125, 255]), // "sky blue"
-            // Rgba([254, 238, 212, 255]), // "glowing cloud"
-            // new color palette
-            Color::Solid(Rgba([76, 76, 68, 255])), // "mountain"
-            Color::Solid(Rgba([130, 92, 67, 255])), // "1/4"
-            Color::Solid(Rgba([167, 105, 66, 255])), // "2/4"
-            Color::Solid(Rgba([198, 117, 65, 255])), // "3/4"
-            Color::Solid(Rgba([224, 128, 64, 255])), // "sunset orange"
+            Color::Solid(color_start),
+            Color::Solid(linear_color_interp(&color_start, &color_end, 2.0 / 6.0)),
+            Color::Solid(linear_color_interp(&color_start, &color_end, 3.0 / 6.0)),
+            Color::Solid(linear_color_interp(&color_start, &color_end, 4.0 / 6.0)),
+            Color::Solid(linear_color_interp(&color_start, &color_end, 5.0 / 6.0)),
+            Color::Solid(color_end),
         ],
         vec![
             Wave {
-                origin: Vec2::new(0.5, 0.9),
-                up: Dir2::new(0.0, -1.0).unwrap(),
+                origin: Vec2::new(0.5, 5.0 / div as f32),
+                up: Dir2::new(gaussian_dist.sample(&mut rng), -1.0).unwrap(),
                 series: vec![
-                    HeightFn::new_sine(0.1, 1.4, 3.0 * f32c::PI / 2.0),
-                    HeightFn::new_perlin(0.06, 0.1, 0741), // seed: m0un741n
+                    HeightFn::new_perlin(amp, wavelength, rng.gen(), rng.gen()),
+                    HeightFn::new_perlin(amp / 2.0, wavelength / 2.0, rng.gen(), rng.gen()),
+                    HeightFn::new_perlin(amp / 4.0, wavelength / 4.0, rng.gen(), rng.gen()),
+                    // HeightFn::new_perlin(amp / 8.0, wavelength / 8.0, rng.gen(), rng.gen()),
                 ],
             },
             Wave {
-                origin: Vec2::new(0.5, 0.8),
-                up: Dir2::new(0.0, -1.0).unwrap(),
+                origin: Vec2::new(0.5, 4.0 / div as f32),
+                up: Dir2::new(-gaussian_dist.sample(&mut rng), -1.0).unwrap(),
                 series: vec![
-                    HeightFn::new_sine(0.1, 1.4, 3.0 * f32c::PI / 2.0),
-                    HeightFn::new_perlin(0.05, 0.1, 0741053), // seed: m0un741n cl053
+                    HeightFn::new_perlin(amp, wavelength, rng.gen(), rng.gen()),
+                    HeightFn::new_perlin(amp / 2.0, wavelength / 2.0, rng.gen(), rng.gen()),
+                    HeightFn::new_perlin(amp / 4.0, wavelength / 4.0, rng.gen(), rng.gen()),
                 ],
             },
             Wave {
-                origin: Vec2::new(0.5, 0.7),
-                up: Dir2::new(0.0, -1.0).unwrap(),
+                origin: Vec2::new(0.5, 3.0 / div as f32),
+                up: Dir2::new(gaussian_dist.sample(&mut rng), -1.0).unwrap(),
                 series: vec![
-                    HeightFn::new_sine(0.1, 1.4, 3.0 * f32c::PI / 2.0),
-                    HeightFn::new_perlin(0.05, 0.1, 074113), // seed: m0un741n m1ddl3
+                    HeightFn::new_perlin(amp, wavelength, rng.gen(), rng.gen()),
+                    HeightFn::new_perlin(amp / 2.0, wavelength / 2.0, rng.gen(), rng.gen()),
+                    HeightFn::new_perlin(amp / 4.0, wavelength / 4.0, rng.gen(), rng.gen()),
                 ],
             },
             Wave {
-                origin: Vec2::new(0.5, 0.6),
-                up: Dir2::new(0.0, -1.0).unwrap(),
+                origin: Vec2::new(0.5, 2.0 / div as f32),
+                up: Dir2::new(-gaussian_dist.sample(&mut rng), -1.0).unwrap(),
                 series: vec![
-                    HeightFn::new_sine(0.1, 1.4, 3.0 * f32c::PI / 2.0),
-                    HeightFn::new_perlin(0.05, 0.1, 07414), // seed: m0un741n f4r
+                    HeightFn::new_perlin(amp, wavelength, rng.gen(), rng.gen()),
+                    HeightFn::new_perlin(amp / 2.0, wavelength / 2.0, rng.gen(), rng.gen()),
+                    HeightFn::new_perlin(amp / 4.0, wavelength / 4.0, rng.gen(), rng.gen()),
+                ],
+            },
+            Wave {
+                origin: Vec2::new(0.5, 1.0 / div as f32),
+                up: Dir2::new(gaussian_dist.sample(&mut rng), -1.0).unwrap(),
+                series: vec![
+                    HeightFn::new_perlin(amp, wavelength, rng.gen(), rng.gen()),
+                    HeightFn::new_perlin(amp / 2.0, wavelength / 2.0, rng.gen(), rng.gen()),
+                    HeightFn::new_perlin(amp / 4.0, wavelength / 4.0, rng.gen(), rng.gen()),
                 ],
             },
         ],
     );
 
-    let (width, height) = (3041, 2150);
+    // body's aspect ratio
+    // let (width, height) = (3041, 2150);
+    let (width, height) = (304, 215);
+    let factor = 4;
+    let (width, height) = (width * factor, height * factor);
     // let (width, height) = (6082 * 2, 4300 * 2);
 
     let mut img_buffer = RgbaImage::new(width, height);

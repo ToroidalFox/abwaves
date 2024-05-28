@@ -23,9 +23,9 @@ impl AbWaves {
             .unwrap_or(self.colors.len() - 1);
 
         if index == 0 {
-            self.colors[index].color_at(-self.waves[0].height_at(point))
+            self.colors[index].color_at(-self.waves[0].altitude_at(point))
         } else {
-            self.colors[index].color_at(self.waves[index - 1].height_at(point))
+            self.colors[index].color_at(self.waves[index - 1].altitude_at(point))
         }
     }
 }
@@ -36,61 +36,68 @@ pub enum Color {
 }
 
 impl Color {
-    pub fn color_at(&self, height: f32) -> Rgba<u8> {
+    pub fn color_at(&self, altitude: f32) -> Rgba<u8> {
         match self {
             Self::Solid(color) => *color,
-            Self::GradientByHeight(start_color, end_color, height_max) => {
-                gamma_corrected_color_interpolation(start_color, end_color, height / height_max)
+            Self::GradientByHeight(start_color, end_color, altitude_max) => {
+                gamma_color_interp(start_color, end_color, altitude / altitude_max)
             }
         }
     }
 }
 
-fn gamma_corrected_color_interpolation(a: &Rgba<u8>, b: &Rgba<u8>, t: f32) -> Rgba<u8> {
+pub fn linear_color_interp(a: &Rgba<u8>, b: &Rgba<u8>, t: f32) -> Rgba<u8> {
+    let mut interp = [0u8; 4];
+    for i in 0..4 {
+        interp[i] = ((1.0 - t) * a.0[i] as f32 + t * b.0[i] as f32).round() as u8;
+    }
+    Rgba(interp)
+}
+
+pub fn gamma_color_interp(a: &Rgba<u8>, b: &Rgba<u8>, t: f32) -> Rgba<u8> {
     const GAMMA: f32 = 2.2;
 
+    // conversions
     let u8_to_f32 = |pixel: &[u8; 4]| {
         let mut f32_pixel = [0.0f32; 4];
-        pixel
-            .iter()
-            .enumerate()
-            .for_each(|(i, ch)| f32_pixel[i] = *ch as f32 / u8::MAX as f32);
+        for i in 0..4 {
+            f32_pixel[i] = pixel[i] as f32 / u8::MAX as f32;
+        }
         f32_pixel
     };
     let f32_to_u8 = |pixel: &[f32; 4]| {
         let mut u8_pixel = [0u8; 4];
-        pixel
-            .iter()
-            .enumerate()
-            .for_each(|(i, ch)| u8_pixel[i] = (*ch * u8::MAX as f32) as u8);
+        for i in 0..4 {
+            u8_pixel[i] = (pixel[i] * u8::MAX as f32).round() as u8;
+        }
         u8_pixel
     };
 
-    let pixel_inverse_gamma_correction = |pixel: &mut [f32; 4]| {
-        pixel.iter_mut().take(3).for_each(|ch| *ch = ch.powf(GAMMA));
-    };
-    let pixel_gamma_correction = |pixel: &mut [f32; 4]| {
+    // gamma
+    let gamma_encode = |pixel: &mut [f32; 4]| {
         pixel
             .iter_mut()
             .take(3)
             .for_each(|ch| *ch = ch.powf(1.0 / GAMMA));
     };
+    let gamma_decode = |pixel: &mut [f32; 4]| {
+        pixel.iter_mut().take(3).for_each(|ch| *ch = ch.powf(GAMMA));
+    };
 
     let t = t.clamp(0.0, 1.0);
     let mut a = u8_to_f32(&a.0);
     let mut b = u8_to_f32(&b.0);
-    pixel_inverse_gamma_correction(&mut a);
-    pixel_inverse_gamma_correction(&mut b);
+    gamma_decode(&mut a);
+    gamma_decode(&mut b);
 
-    a.iter_mut().for_each(|ch| *ch = t * *ch);
-    b.iter_mut().for_each(|ch| *ch = (1.0 - t) * *ch);
+    // interp: (1 - t)a + tb
     let mut result = [0.0f32; 4];
     result
         .iter_mut()
         .enumerate()
-        .for_each(|(i, ch)| *ch = t * a[i] + (1.0 - t) * b[i]);
+        .for_each(|(i, ch)| *ch = (1.0 - t) * a[i] + t * b[i]);
 
-    pixel_gamma_correction(&mut result);
+    gamma_encode(&mut result);
 
     Rgba(f32_to_u8(&result))
 }
