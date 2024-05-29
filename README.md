@@ -2,9 +2,9 @@
 
 Generate images with **ab**stract **waves**.
 
-## Usage
+## Usage(TBD)
 
-Currently this repo does not provide any friendly instruction, and usage is not even allowed as the license hasn't been decided yet.
+Currently this repo does not provide any friendly instruction.
 `--release` is recommended for significantly faster image generation.
 
 ## License

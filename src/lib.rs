@@ -3,6 +3,7 @@ pub mod prelude;
 pub mod wave;
 
 use image::Rgba;
+use itertools::Itertools;
 
 pub struct AbWaves {
     colors: Vec<Color>,
@@ -46,21 +47,14 @@ impl Color {
     }
 }
 
-pub fn rgba_from_hexcode(hex_code: &str) -> Rgba<u8> {
-    let chars = hex_code
-        .trim_start_matches('#')
-        .chars()
-        .collect::<Vec<char>>();
-    let mut channels = chars
-        .windows(2)
-        .map(|ch| u8::from_str_radix(&ch.iter().collect::<String>(), 16));
+pub fn color_from_hex(hex_code: &str) -> Rgba<u8> {
+    let hex_code = hex_code.trim_start_matches('#');
+    let mut channels = (0..3).map(|i| i * 2).map(|i| &hex_code[i..(i + 2)]);
 
     let mut rgba = Rgba([u8::MAX; 4]);
-
     for i in 0..3 {
-        rgba.0[i] = channels.next().unwrap().unwrap();
+        rgba.0[i] = u8::from_str_radix(channels.next().unwrap(), 16).unwrap();
     }
-
     rgba
 }
 

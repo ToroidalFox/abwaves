@@ -1,6 +1,6 @@
 use abwaves::prelude::*;
 
-use image::{Rgba, RgbaImage};
+use image::RgbaImage;
 use rand::{Rng, SeedableRng};
 use rand_distr::Distribution;
 use rayon::prelude::*;
@@ -9,8 +9,8 @@ fn main() {
     let seed = 42;
     let mut rng = rand_xoshiro::Xoshiro256PlusPlus::seed_from_u64(seed);
 
-    let color_start = Rgba([0x30, 0x36, 0x50, 255]);
-    let color_end = Rgba([0x90, 0xa0, 0xb0, 255]);
+    let color_start = color_from_hex("#303650");
+    let color_end = color_from_hex("#90a0b0");
 
     let padding = -1.0 / 10.0;
     // let padding = 0.0;
@@ -84,7 +84,7 @@ fn main() {
 
     // let (width, height) = (3041, 2150); // apple macbook air dimension
     let (width, height) = (16, 10);
-    let factor = 160 * 9; // 160 for "1440p"
+    let factor = 160; // 160 for "1440p"
     let (width, height) = (width * factor, height * factor);
 
     let mut img_buffer = RgbaImage::new(width, height);
@@ -99,6 +99,6 @@ fn main() {
         });
 
     let mut new_image =
-        std::fs::File::create(format!("asahi_{}_{}x{}", seed, width, height)).unwrap();
+        std::fs::File::create(format!("asahi_{}_{}x{}.png", seed, width, height)).unwrap();
     let _ = img_buffer.write_to(&mut new_image, image::ImageFormat::Png);
 }
