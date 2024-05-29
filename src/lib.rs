@@ -2,7 +2,7 @@ pub mod math;
 pub mod prelude;
 pub mod wave;
 
-use image::{Pixel, Rgba};
+use image::Rgba;
 
 pub struct AbWaves {
     colors: Vec<Color>,
@@ -44,6 +44,24 @@ impl Color {
             }
         }
     }
+}
+
+pub fn rgba_from_hexcode(hex_code: &str) -> Rgba<u8> {
+    let chars = hex_code
+        .trim_start_matches('#')
+        .chars()
+        .collect::<Vec<char>>();
+    let mut channels = chars
+        .windows(2)
+        .map(|ch| u8::from_str_radix(&ch.iter().collect::<String>(), 16));
+
+    let mut rgba = Rgba([u8::MAX; 4]);
+
+    for i in 0..3 {
+        rgba.0[i] = channels.next().unwrap().unwrap();
+    }
+
+    rgba
 }
 
 pub fn linear_color_interp(a: &Rgba<u8>, b: &Rgba<u8>, t: f32) -> Rgba<u8> {
