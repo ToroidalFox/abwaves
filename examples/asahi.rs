@@ -9,7 +9,7 @@ fn main() {
     let seed = 42;
     let mut rng = rand_xoshiro::Xoshiro256PlusPlus::seed_from_u64(seed);
 
-    let color_start = color_from_hex("#303650");
+    let color_start = color_from_hex("#262b40");
     let color_end = color_from_hex("#90a0b0");
 
     let padding = -1.0 / 10.0;

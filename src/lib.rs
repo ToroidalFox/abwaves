@@ -3,7 +3,6 @@ pub mod prelude;
 pub mod wave;
 
 use image::Rgba;
-use itertools::Itertools;
 
 pub struct AbWaves {
     colors: Vec<Color>,

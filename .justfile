@@ -9,8 +9,9 @@ edit:
 [linux]
 asahi:
     cargo run --example asahi 
-    xdg-open asahi.png > /dev/null 2>&1
+    xdg-open asahi_*.png > /dev/null 2>&1
 
+[linux]
 asahi2:
     cargo run --example asahi2
     xdg-open asahi2_*.png > /dev/null 2>&1
